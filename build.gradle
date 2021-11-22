@@ -1,0 +1,97 @@
+buildscript {
+    ext {
+        spring = "2.6.0"
+        kotlin = "1.6.0"
+        boot = "org.springframework.boot"
+    }
+
+    repositories {
+        mavenCentral() // Apache Maven Central dependencies repository 사용을 위한 설정
+    }
+
+    dependencies {
+        classpath("${boot}:spring-boot-gradle-plugin:${spring}") //spring-boot project를 gradle로 build하기 위한 dependency
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin}")
+        classpath("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
+        classpath("org.jetbrains.kotlin:kotlin-allopen:${kotlin}")
+        classpath("org.jetbrains.kotlin:kotlin-noarg:${kotlin}")
+
+    }
+}
+
+allprojects {
+    group = "com.cloudm"
+    version = "1.0.0"
+}
+
+subprojects {
+    apply plugin: "kotlin" // kotlin project 개발 및 build를 위한 plugin
+    apply plugin: "kotlin-spring"
+    apply plugin: "kotlin-jpa"
+    apply plugin: "kotlin-allopen"
+    allOpen {
+        annotation "javax.persistence.Entity"
+    }
+
+    apply plugin: boot
+    apply plugin: "io.spring.dependency-management"
+    apply plugin: "idea"
+
+    repositories {
+        mavenCentral()
+    }
+
+    configurations {
+        runtimeClasspath {
+            extendsFrom developmentOnly
+        }
+    }
+
+    compileKotlin {
+        kotlinOptions {
+            freeCompilerArgs = ["-Xjsr305=strict"]
+            jvmTarget = "11" // Kotlin의 기본 JVM target version이 1.6이므로 java version에 맞춰 compile 옵션 명시
+        }
+    }
+
+    compileTestKotlin {
+        kotlinOptions {
+            freeCompilerArgs = ["-Xjsr305=strict"]
+            jvmTarget = "11"
+        }
+    }
+
+    dependencies {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+        implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+        implementation("io.github.microutils:kotlin-logging-jvm:2.0.6")
+
+        testImplementation("org.springframework.boot:spring-boot-starter-test")
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}
+
+tasks.withType(Test) {
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+}
+
+// Parallel Testing
+tasks.withType(Test) {
+    forkEvery = 100
+}
+
+tasks.withType(Test) {
+    reports.html.enabled = false
+    reports.junitXml.enabled = false
+}
+
+tasks.withType(JavaCompile) {
+    options.fork = true
+}
+
+help.enabled(false)
